@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#__next {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* Ant Design customizations */
+.ant-slider-track {
+  background-color: #ff7a00 !important;
+}
+
+.ant-slider-handle {
+  border-color: #ff7a00 !important;
+}
+
+.ant-slider-handle:hover {
+  border-color: #ff7a00 !important;
+}
+
+.ant-slider-handle:focus {
+  border-color: #ff7a00 !important;
+  box-shadow: 0 0 0 5px rgba(255, 122, 0, 0.12) !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

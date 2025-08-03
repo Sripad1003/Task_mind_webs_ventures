@@ -61,11 +61,21 @@ export const useStore = create<AppState>((set, get) => ({
       name: "Open-Meteo Weather",
       fields: ["temperature_2m"],
       colorRules: [
-        { id: "1", field: "temperature_2m", operator: "<", value: 10, color: "#ff4d4f" },
-        { id: "2", field: "temperature_2m", operator: ">=", value: 10, color: "#1890ff" },
-        { id: "3", field: "temperature_2m", operator: ">=", value: 25, color: "#52c41a" },
+        { id: "1", field: "temperature_2m", operator: "<", value: 10, color: "#ff4d4f" }, // Red
+        { id: "2", field: "temperature_2m", operator: ">=", value: 10, color: "#1890ff" }, // Blue
+        { id: "3", field: "temperature_2m", operator: ">=", value: 25, color: "#52c41a" }, // Green
       ],
     },
+    // You can add more data sources here
+    // {
+    //   id: "mock-data",
+    //   name: "Mock Data Source",
+    //   fields: ["value"],
+    //   colorRules: [
+    //     { id: "a", field: "value", operator: "<", value: 50, color: "#ff00ff" },
+    //     { id: "b", field: "value", operator: ">=", value: 50, color: "#00ffff" },
+    //   ],
+    // },
   ],
   selectedDataSource: "open-meteo",
   polygonData: [],
@@ -78,10 +88,11 @@ export const useStore = create<AppState>((set, get) => ({
   setIsDrawing: (drawing) => set({ isDrawing: drawing }),
   setCurrentDrawingPoints: (points) => set({ currentDrawingPoints: points }),
 
-  addPolygon: (polygon) =>
+  addPolygon: (polygon) => {
     set((state) => ({
       polygons: [...state.polygons, polygon],
-    })),
+    }))
+  },
 
   removePolygon: (id) =>
     set((state) => ({

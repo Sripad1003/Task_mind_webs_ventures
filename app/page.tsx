@@ -1,37 +1,25 @@
 "use client"
-import dynamic from "next/dynamic"
-import { TimelineSlider } from "../components/TimelineSlider"
-import { Sidebar } from "../components/Sidebar"
-import { useWeatherData } from "../hooks/useWeatherData"
 
-// Dynamically import MapComponent to avoid SSR issues with Leaflet
-const MapComponent = dynamic(
-  () => import("../components/MapComponent").then((mod) => ({ default: mod.MapComponent })),
-  {
-    ssr: false,
-    loading: () => <div className="flex items-center justify-center h-full">Loading map...</div>,
-  },
-)
+import { MapComponent } from "@/components/MapComponent"
+import { Sidebar } from "@/components/Sidebar"
+import { TimelineSlider } from "@/components/TimelineSlider"
+import { useWeatherData } from "@/hooks/useWeatherData"
 
-export default function Dashboard() {
-  // Initialize weather data fetching
+export default function Home() {
+  // This hook fetches data and updates polygon colors based on timeline and rules
   useWeatherData()
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Timeline Slider */}
-      <TimelineSlider />
-
-      {/* Main Content */}
-      <div className="flex-1 flex">
-        {/* Map */}
-        <div className="flex-1">
+    <div className="flex h-screen w-screen overflow-hidden">
+      <div className="flex flex-1 flex-col">
+        <div className="relative flex-1">
           <MapComponent />
         </div>
-
-        {/* Sidebar */}
-        <Sidebar />
+        <div className="h-32 flex-shrink-0 border-t border-gray-200 p-4">
+          <TimelineSlider />
+        </div>
       </div>
+      <Sidebar />
     </div>
   )
 }

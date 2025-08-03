@@ -13,7 +13,7 @@ export interface Polygon {
   name: string
   points: Point[]
   dataSource: string
-  color: string
+  color: string // This will be the default color, actual display color comes from polygonData
   centroid: Point
   boundingBox: {
     north: number
@@ -44,12 +44,14 @@ export interface WeatherData {
   hourly: {
     time: string[]
     temperature_2m: number[]
+    // Add other potential hourly fields here if needed
   }
+  // Add other potential data types here (e.g., daily, current)
 }
 
 export interface PolygonData {
   polygonId: string
-  timestamp: string
-  value: number
-  color: string
+  timestamp: string // The timestamp for which this data point is valid
+  value: number // The fetched data value for the polygon
+  color: string // The color determined by applying color rules
 }

@@ -15,7 +15,7 @@ export const Sidebar: React.FC = () => {
     polygons,
     dataSources,
     selectedDataSource,
-    setSelectedDataSource, // Added for data source selection
+    setSelectedDataSource,
     removePolygon,
     addColorRule,
     removeColorRule,

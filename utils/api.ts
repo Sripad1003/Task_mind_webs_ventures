@@ -1,63 +1,119 @@
-import type { WeatherData } from "../types"
+import type { ColorRule, WeatherData } from "../types"
 
-export const fetchWeatherData = async (
+/**
+ * Calculates the centroid of a polygon.
+ * @param points An array of [latitude, longitude] pairs.
+ * @returns A [latitude, longitude] pair representing the centroid.
+ */
+export function calculatePolygonCentroid(points: [number, number][]): [number, number] {
+  if (points.length === 0) return [0, 0]
+
+  let latSum = 0
+  let lngSum = 0
+  for (const [lat, lng] of points) {
+    latSum += lat
+    lngSum += lng
+  }
+  return [latSum / points.length, lngSum / points.length]
+}
+
+/**
+ * Calculates the bounding box (min/max lat/lng) of a polygon.
+ * @param points An array of [latitude, longitude] pairs.
+ * @returns An object with north, south, east, west bounds.
+ */
+export function calculateBoundingBox(points: [number, number][]) {
+  if (points.length === 0) {
+    return { north: 0, south: 0, east: 0, west: 0 }
+  }
+
+  let minLat = points[0][0]
+  let maxLat = points[0][0]
+  let minLng = points[0][1]
+  let maxLng = points[0][1]
+
+  for (const [lat, lng] of points) {
+    minLat = Math.min(minLat, lat)
+    maxLat = Math.max(maxLat, lat)
+    minLng = Math.min(minLng, lng)
+    maxLng = Math.max(maxLng, lng)
+  }
+
+  return { north: maxLat, south: minLat, east: maxLng, west: minLng }
+}
+
+/**
+ * Fetches weather data from Open-Meteo API for a given location and time range.
+ * @param latitude Latitude of the location.
+ * @param longitude Longitude of the location.
+ * @param startDate Start date for the data.
+ * @param endDate End date for the data.
+ * @param hourlyFields Array of hourly weather fields to fetch (e.g., ["temperature_2m"]).
+ * @returns WeatherData object or null if an error occurs.
+ */
+export async function fetchWeatherData(
   latitude: number,
   longitude: number,
-  startDate: string,
-  endDate: string,
-): Promise<WeatherData> => {
-  // Updated URL to use the archive API as requested
-  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m&start_date=${startDate}&end_date=${endDate}&timezone=auto`
+  startDate: Date,
+  endDate: Date,
+  hourlyFields: string[],
+): Promise<WeatherData | null> {
+  const start = startDate.toISOString().split("T")[0]
+  const end = endDate.toISOString().split("T")[0]
+  const fields = hourlyFields.join(",")
 
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch weather data: ${response.statusText}`)
-  }
+  // Using the archive API as requested
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${start}&end_date=${end}&hourly=${fields}`
 
-  return response.json()
-}
-
-export const calculatePolygonCentroid = (points: [number, number][]): [number, number] => {
-  const x = points.reduce((sum, point) => sum + point[0], 0) / points.length
-  const y = points.reduce((sum, point) => sum + point[1], 0) / points.length
-  return [x, y]
-}
-
-export const calculateBoundingBox = (points: [number, number][]) => {
-  const lats = points.map((p) => p[0])
-  const lngs = points.map((p) => p[1])
-
-  return {
-    north: Math.max(...lats),
-    south: Math.min(...lats),
-    east: Math.max(...lngs),
-    west: Math.min(...lngs),
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const data: WeatherData = await response.json()
+    return data
+  } catch (error) {
+    console.error("Error fetching weather data:", error)
+    return null
   }
 }
 
-export const applyColorRules = (value: number, rules: any[]): string => {
-  // Sort rules by value to apply in correct order
-  const sortedRules = [...rules].sort((a, b) => a.value - b.value)
+/**
+ * Applies color rules to a given value.
+ * @param value The data value to evaluate.
+ * @param rules An array of ColorRule objects.
+ * @returns The hex color string that matches the first rule, or a default grey if no rule matches.
+ */
+export function applyColorRules(value: number, rules: ColorRule[]): string {
+  // Sort rules to ensure correct precedence if operators overlap (e.g., <10, >=10)
+  // For simplicity, we assume rules are ordered from most specific to least specific,
+  // or that they are mutually exclusive.
+  // A more robust solution might involve sorting by operator type or value.
 
-  for (const rule of sortedRules) {
+  for (const rule of rules) {
+    let matches = false
     switch (rule.operator) {
       case "<":
-        if (value < rule.value) return rule.color
+        matches = value < rule.value
         break
       case "<=":
-        if (value <= rule.value) return rule.color
-        break
-      case ">":
-        if (value > rule.value) return rule.color
-        break
-      case ">=":
-        if (value >= rule.value) return rule.color
+        matches = value <= rule.value
         break
       case "=":
-        if (value === rule.value) return rule.color
+        matches = value === rule.value
+        break
+      case ">=":
+        matches = value >= rule.value
+        break
+      case ">":
+        matches = value > rule.value
+        break
+      default:
         break
     }
+    if (matches) {
+      return rule.color
+    }
   }
-
   return "#cccccc" // Default color if no rule matches
 }

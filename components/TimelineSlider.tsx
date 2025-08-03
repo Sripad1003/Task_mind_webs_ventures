@@ -1,86 +1,63 @@
 "use client"
 
 import type React from "react"
-import { Slider, Switch, Typography } from "antd"
-import { format, addHours, differenceInHours } from "date-fns"
+import { Slider, Switch, Typography, Space } from "antd"
 import { useStore } from "../store/useStore"
+import { format } from "date-fns"
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 export const TimelineSlider: React.FC = () => {
   const { timeRange, isRangeMode, selectedHour, setTimeRange, setIsRangeMode, setSelectedHour } = useStore()
 
-  const totalHours = differenceInHours(timeRange.end, timeRange.start)
-  const selectedHourIndex = differenceInHours(selectedHour, timeRange.start)
+  const minDate = timeRange.start.getTime()
+  const maxDate = timeRange.end.getTime()
 
-  const handleSliderChange = (value: number | number[]) => {
-    if (isRangeMode && Array.isArray(value)) {
-      const [start, end] = value
-      setTimeRange({
-        start: addHours(timeRange.start, start),
-        end: addHours(timeRange.start, end),
-      })
-    } else if (!isRangeMode && typeof value === "number") {
-      setSelectedHour(addHours(timeRange.start, value))
+  const handleSliderChange = (value: number | [number, number]) => {
+    if (isRangeMode) {
+      if (Array.isArray(value)) {
+        setTimeRange({ start: new Date(value[0]), end: new Date(value[1]) })
+      }
+    } else {
+      if (typeof value === "number") {
+        setSelectedHour(new Date(value))
+      }
     }
   }
 
-  const formatTooltip = (value: number) => {
-    const date = addHours(timeRange.start, value)
-    return format(date, "MMM dd, HH:mm")
+  const marks = {
+    [minDate]: format(timeRange.start, "MMM dd"),
+    [maxDate]: format(timeRange.end, "MMM dd"),
   }
 
   return (
-    <div className="bg-white p-6 shadow-sm border-b">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-4">
-          <Title level={4} className="m-0">
-            Timeline Control
-          </Title>
-          <div className="flex items-center gap-2">
-            <Text>Single Hour</Text>
-            <Switch checked={isRangeMode} onChange={setIsRangeMode} size="small" />
-            <Text>Range Mode</Text>
-          </div>
-        </div>
+    <div className="flex flex-col gap-4">
+      <Space>
+        <Text strong>Range Mode:</Text>
+        <Switch checked={isRangeMode} onChange={setIsRangeMode} />
+      </Space>
 
-        <div className="mb-4">
-          {isRangeMode ? (
-            <Slider
-              range
-              min={0}
-              max={totalHours}
-              value={[
-                differenceInHours(timeRange.start, timeRange.start),
-                differenceInHours(timeRange.end, timeRange.start),
-              ]}
-              onChange={handleSliderChange}
-              tooltip={{ formatter: formatTooltip }}
-              className="mb-2"
-            />
-          ) : (
-            <Slider
-              min={0}
-              max={totalHours}
-              value={selectedHourIndex}
-              onChange={handleSliderChange}
-              tooltip={{ formatter: formatTooltip }}
-              className="mb-2"
-            />
-          )}
-        </div>
+      <Slider
+        range={isRangeMode}
+        min={minDate}
+        max={maxDate}
+        value={isRangeMode ? [timeRange.start.getTime(), timeRange.end.getTime()] : selectedHour.getTime()}
+        onChange={handleSliderChange}
+        marks={marks}
+        step={isRangeMode ? 3600000 * 24 : 3600000} // Daily step for range, hourly for single
+        tooltip={{
+          formatter: (value) => (value ? format(new Date(value), "MMM dd, HH:00") : ""),
+        }}
+      />
 
-        <div className="flex justify-between text-sm text-gray-500">
-          <span>{format(timeRange.start, "MMM dd, yyyy HH:mm")}</span>
-          {isRangeMode ? (
-            <span>
-              Selected: {format(timeRange.start, "MMM dd HH:mm")} - {format(timeRange.end, "MMM dd HH:mm")}
-            </span>
-          ) : (
-            <span>Selected: {format(selectedHour, "MMM dd, yyyy HH:mm")}</span>
-          )}
-          <span>{format(timeRange.end, "MMM dd, yyyy HH:mm")}</span>
-        </div>
+      <div className="flex justify-between">
+        {isRangeMode ? (
+          <Text>
+            Selected Range: {format(timeRange.start, "MMM dd, HH:00")} - {format(timeRange.end, "MMM dd, HH:00")}
+          </Text>
+        ) : (
+          <Text>Selected Hour: {format(selectedHour, "MMM dd, HH:00")}</Text>
+        )}
       </div>
     </div>
   )

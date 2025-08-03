@@ -1,63 +1,69 @@
 "use client"
 
 import { useEffect } from "react"
-import { format } from "date-fns"
 import { useStore } from "../store/useStore"
 import { fetchWeatherData, applyColorRules } from "../utils/api"
+import type { PolygonData } from "../types"
 
 export const useWeatherData = () => {
-  const { polygons, timeRange, selectedHour, isRangeMode, dataSources, updatePolygonData } = useStore()
+  const { polygons, selectedHour, isRangeMode, timeRange, dataSources, selectedDataSource, updatePolygonData } =
+    useStore()
 
   useEffect(() => {
-    const fetchDataForPolygons = async () => {
-      if (polygons.length === 0) return
+    const fetchDataAndApplyRules = async () => {
+      if (polygons.length === 0) {
+        updatePolygonData([])
+        return
+      }
 
-      const startDate = format(isRangeMode ? timeRange.start : selectedHour, "yyyy-MM-dd")
-      const endDate = format(isRangeMode ? timeRange.end : selectedHour, "yyyy-MM-dd")
+      const currentDataSource = dataSources.find((ds) => ds.id === selectedDataSource)
+      if (!currentDataSource) {
+        console.warn(`Data source with ID ${selectedDataSource} not found.`)
+        updatePolygonData([])
+        return
+      }
 
       const polygonDataPromises = polygons.map(async (polygon) => {
         try {
-          const weatherData = await fetchWeatherData(polygon.centroid.lat, polygon.centroid.lng, startDate, endDate)
+          const startDate = isRangeMode ? timeRange.start : selectedHour
+          const endDate = isRangeMode ? timeRange.end : selectedHour
 
-          // Get the data source for this polygon
-          const dataSource = dataSources.find((ds) => ds.id === polygon.dataSource)
-          if (!dataSource) return null
+          const weatherData = await fetchWeatherData(
+            polygon.centroid.lat,
+            polygon.centroid.lng,
+            startDate,
+            endDate,
+            currentDataSource.fields,
+          )
 
-          // Calculate average temperature for the time range
-          let avgTemperature = 0
-          if (isRangeMode) {
-            const relevantTemperatures = weatherData.hourly.temperature_2m.filter((_, index) => {
-              const time = new Date(weatherData.hourly.time[index])
-              return time >= timeRange.start && time <= timeRange.end
-            })
-            avgTemperature = relevantTemperatures.reduce((sum, temp) => sum + temp, 0) / relevantTemperatures.length
-          } else {
-            // Find the closest hour to selectedHour
-            const selectedHourStr = format(selectedHour, "yyyy-MM-dd'T'HH:00")
-            const hourIndex = weatherData.hourly.time.findIndex((time) => time.startsWith(selectedHourStr))
-            avgTemperature = hourIndex >= 0 ? weatherData.hourly.temperature_2m[hourIndex] : 0
-          }
+          // For simplicity, we'll take the average or first value for the selected field
+          // In a real app, you might want more sophisticated aggregation
+          const fieldValues = weatherData?.hourly?.[currentDataSource.fields[0] as keyof typeof weatherData.hourly]
+          const value = fieldValues && fieldValues.length > 0 ? fieldValues[0] : null
 
-          // Apply color rules
-          const color = applyColorRules(avgTemperature, dataSource.colorRules)
+          const color = value !== null ? applyColorRules(value, currentDataSource.colorRules) : "#cccccc" // Default grey if no value
 
           return {
             polygonId: polygon.id,
-            timestamp: format(selectedHour, "yyyy-MM-dd'T'HH:mm:ss"),
-            value: avgTemperature,
-            color,
-          }
+            timestamp: selectedHour.toISOString(), // Or a relevant timestamp from weatherData
+            value: value !== null ? value : 0, // Default to 0 if null
+            color: color,
+          } as PolygonData
         } catch (error) {
           console.error(`Error fetching data for polygon ${polygon.id}:`, error)
-          return null
+          return {
+            polygonId: polygon.id,
+            timestamp: selectedHour.toISOString(),
+            value: 0,
+            color: "#cccccc", // Grey for error/no data
+          } as PolygonData
         }
       })
 
-      const results = await Promise.all(polygonDataPromises)
-      const validResults = results.filter((result) => result !== null)
-      updatePolygonData(validResults)
+      const newPolygonData = await Promise.all(polygonDataPromises)
+      updatePolygonData(newPolygonData)
     }
 
-    fetchDataForPolygons()
-  }, [polygons, timeRange, selectedHour, isRangeMode, dataSources, updatePolygonData])
+    fetchDataAndApplyRules()
+  }, [polygons, selectedHour, isRangeMode, timeRange, dataSources, selectedDataSource, updatePolygonData])
 }

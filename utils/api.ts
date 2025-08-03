@@ -6,11 +6,12 @@ export const fetchWeatherData = async (
   startDate: string,
   endDate: string,
 ): Promise<WeatherData> => {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m&start_date=${startDate}&end_date=${endDate}&timezone=auto`
+  // Updated URL to use the archive API as requested
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m&start_date=${startDate}&end_date=${endDate}&timezone=auto`
 
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error("Failed to fetch weather data")
+    throw new Error(`Failed to fetch weather data: ${response.statusText}`)
   }
 
   return response.json()
@@ -58,5 +59,5 @@ export const applyColorRules = (value: number, rules: any[]): string => {
     }
   }
 
-  return "#cccccc" // Default color
+  return "#cccccc" // Default color if no rule matches
 }

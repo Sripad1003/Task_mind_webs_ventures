@@ -57,7 +57,7 @@ const MapEvents: React.FC = () => {
       name: `Polygon ${Date.now()}`,
       points: currentDrawingPoints.map(([lat, lng]) => ({ lat, lng })),
       dataSource: selectedDataSource,
-      color: "#1890ff",
+      color: "#1890ff", // Default color, will be updated by data rules
       centroid: { lat: centroid[0], lng: centroid[1] },
       boundingBox,
     }
@@ -107,7 +107,7 @@ export const MapComponent: React.FC = () => {
 
   const getPolygonColor = (polygonId: string): string => {
     const data = polygonData.find((d) => d.polygonId === polygonId)
-    return data?.color || "#1890ff"
+    return data?.color || "#cccccc" // Default color if no data or rule applies
   }
 
   return (

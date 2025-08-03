@@ -11,8 +11,15 @@ const { Title, Text } = Typography
 const { Option } = Select
 
 export const Sidebar: React.FC = () => {
-  const { polygons, dataSources, selectedDataSource, removePolygon, addColorRule, removeColorRule, updateDataSource } =
-    useStore()
+  const {
+    polygons,
+    dataSources,
+    selectedDataSource,
+    setSelectedDataSource, // Added for data source selection
+    removePolygon,
+    addColorRule,
+    removeColorRule,
+  } = useStore()
 
   const [newRule, setNewRule] = useState<Partial<ColorRule>>({
     field: "temperature_2m",
@@ -82,14 +89,19 @@ export const Sidebar: React.FC = () => {
       <Card title="Data Source Configuration" size="small" className="mb-4">
         <Space direction="vertical" className="w-full">
           <div>
-            <Text strong>Current Data Source:</Text>
-            <br />
-            <Text>{currentDataSource?.name}</Text>
+            <Text strong>Select Data Source:</Text>
+            <Select value={selectedDataSource} onChange={(value) => setSelectedDataSource(value)} className="w-full">
+              {dataSources.map((ds) => (
+                <Option key={ds.id} value={ds.id}>
+                  {ds.name}
+                </Option>
+              ))}
+            </Select>
           </div>
 
           <Divider />
 
-          <Text strong>Color Rules:</Text>
+          <Text strong>Color Rules for {currentDataSource?.name}:</Text>
 
           {/* Existing Rules */}
           <List
